@@ -38,6 +38,13 @@ final class ProjectController
                 $project->prizeTiers()->create($tierData);
             }
 
+            for ($i = 1; $i <= $project->total_batches; $i++) {
+                $project->batches()->create([
+                    'batch_number' => $i,
+                    'status' => 'pending',
+                ]);
+            }
+
             return $project;
         });
 
@@ -49,6 +56,15 @@ final class ProjectController
 
     public function show(Project $project): ProjectResource
     {
-        return new ProjectResource($project->load('creator'));
+        return new ProjectResource($project->load('creator', 'prizeTiers'));
+    }
+
+    public function destroy(Project $project): JsonResponse
+    {
+        $project->delete();
+
+        return response()->json([
+            'message' => 'Project and all its associated data have been permanently deleted.'
+        ]);
     }
 }

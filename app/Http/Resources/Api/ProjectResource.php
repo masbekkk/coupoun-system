@@ -34,6 +34,11 @@ final class ProjectResource extends JsonResource
                 'id' => $this->creator->id,
                 'name' => $this->creator->name,
             ],
+            'prize_tiers' => $this->whenLoaded('prizeTiers', fn () => $this->prizeTiers->map(fn ($tier) => [
+                'id' => $tier->id,
+                'name' => $tier->name,
+                'amount' => $tier->amount,
+            ])),
             'created_at' => $this->created_at->toIso8601String(),
         ];
     }

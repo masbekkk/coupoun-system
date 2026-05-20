@@ -23,14 +23,17 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // Project Endpoints
     Route::get('/projects', [ProjectController::class, 'index']);
     Route::post('/projects', [ProjectController::class, 'store']);
+    // Project Details and Deletion
     Route::get('/projects/{project}', [ProjectController::class, 'show']);
+    Route::delete('/projects/{project}', [ProjectController::class, 'destroy']);
 
     // Generate Coupons Endpoint
-    Route::post('/projects/{project}/generate', [CouponGenerationController::class, 'store']);
+    Route::post('/batches/{batch}/generate', [CouponGenerationController::class, 'store']);
 
     // Project Detail Relationships
     Route::get('/projects/{project}/batches', [ProjectBatchController::class, 'index']);
     Route::get('/projects/{project}/coupons', [ProjectCouponController::class, 'index']);
+    Route::get('/projects/{project}/coupons/export', [ProjectCouponController::class, 'export']);
 
     // Reporting Endpoints
     Route::get('/batches/{batch}/report', [BatchReportController::class, 'show']);

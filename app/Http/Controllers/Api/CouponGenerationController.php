@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Actions\GenerateCoupons;
-use App\Models\Project;
+use App\Models\Batch;
 use Exception;
 use Illuminate\Http\JsonResponse;
 
 final class CouponGenerationController
 {
-    public function store(Project $project, GenerateCoupons $action): JsonResponse
+    public function store(Batch $batch, GenerateCoupons $action): JsonResponse
     {
         try {
-            $action->handle($project);
+            $action->handle($batch);
 
             return response()->json([
-                'message' => 'Coupons generated successfully.',
-                'status' => $project->fresh()->status->value,
+                'message' => 'Batch coupons generated successfully.',
+                'status' => $batch->fresh()->status, // the status column is string
             ]);
         } catch (Exception $e) {
             return response()->json([

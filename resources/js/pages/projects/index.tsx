@@ -68,9 +68,11 @@ export default function ProjectsIndex() {
                                         <span className="text-muted-foreground">Total Coupons:</span>
                                         <span className="font-semibold text-foreground">{new Intl.NumberFormat().format(project.config.total_coupons)}</span>
                                     </div>
-                                    <Link href={`/projects/${project.id}`} className="block w-full">
-                                        <Button variant="outline" className="w-full">View Details</Button>
-                                    </Link>
+                                    <div className="flex gap-2">
+                                        <Link href={`/projects/${project.id}`} className="block w-full flex-1">
+                                            <Button variant="outline" className="w-full">View Details</Button>
+                                        </Link>
+                                    </div>
                                 </CardContent>
                             </Card>
                         ))

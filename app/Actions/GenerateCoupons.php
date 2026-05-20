@@ -5,25 +5,30 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Enums\ProjectStatus;
+use App\Models\Batch;
 use App\Models\Coupon;
-use App\Models\Project;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
 final readonly class GenerateCoupons
 {
-    public function handle(Project $project): void
+    public function handle(Batch $batch): void
     {
-        if ($project->status !== ProjectStatus::Draft && $project->status !== ProjectStatus::Generating) {
-            throw new Exception('Project must be in draft status to generate coupons.');
+        if ($batch->status !== 'pending') {
+            throw new Exception('Batch must be in pending status to generate coupons.');
         }
 
-        $project->update(['status' => ProjectStatus::Generating]);
+        $project = $batch->project;
 
-        DB::transaction(function () use ($project): void {
-            // Reset existing data if any
-            $project->boxes()->delete();
-            $project->coupons()->delete();
+        $batch->update(['status' => 'generating']);
+        
+        if ($project->status === ProjectStatus::Draft) {
+            $project->update(['status' => ProjectStatus::Generating]);
+        }
+
+        DB::transaction(function () use ($batch, $project): void {
+            // Reset existing data for THIS batch if any
+            $batch->boxes()->delete();
 
             $tiers = $project->prizeTiers()->get();
 
@@ -42,20 +47,13 @@ final readonly class GenerateCoupons
                 throw new Exception('The total per_box_quantity of prize tiers does not match the project coupons_per_box.');
             }
 
-            for ($boxNumber = 1; $boxNumber <= $project->total_boxes; $boxNumber++) {
-                $batchNumber = (int) ceil($boxNumber / $project->boxes_per_batch);
+            $boxesPerBatch = $project->boxes_per_batch;
+            $startBoxNumber = (($batch->batch_number - 1) * $boxesPerBatch) + 1;
+            $endBoxNumber = min($startBoxNumber + $boxesPerBatch - 1, $project->total_boxes);
 
-                $batch = $project->batches()->updateOrCreate(
-                    ['batch_number' => $batchNumber],
-                    [
-                        'user_id' => auth()->id(),
-                        'location' => 'HQ Production Facility',
-                        'produced_at' => now(),
-                    ]
-                );
-
-                $box = $project->boxes()->create([
-                    'batch_id' => $batch->id,
+            for ($boxNumber = $startBoxNumber; $boxNumber <= $endBoxNumber; $boxNumber++) {
+                $box = $batch->boxes()->create([
+                    'project_id' => $project->id,
                     'box_number' => $boxNumber,
                 ]);
 
@@ -83,7 +81,18 @@ final readonly class GenerateCoupons
             }
         });
 
-        $project->update(['status' => ProjectStatus::Ready]);
+        $batch->update([
+            'status' => 'ready',
+            'user_id' => auth()->id(),
+            'location' => 'HQ Production Facility',
+            'produced_at' => now(),
+        ]);
+
+        // Check if all batches are ready
+        $pendingBatches = $project->batches()->where('status', '!=', 'ready')->count();
+        if ($pendingBatches === 0) {
+            $project->update(['status' => ProjectStatus::Ready]);
+        }
     }
 
     /**
