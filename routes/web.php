@@ -13,10 +13,16 @@ use App\Http\Controllers\UserTwoFactorAuthenticationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', fn () => Inertia::render('welcome'))->name('home');
+Route::get('/', fn () => redirect()->route('dashboard'));
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('dashboard', fn () => Inertia::render('dashboard'))->name('dashboard');
+
+    // Coupon System Admin Routes
+    Route::get('projects', fn () => Inertia::render('projects/index'))->name('projects.index');
+    Route::get('projects/create', fn () => Inertia::render('projects/create'))->name('projects.create');
+    Route::get('projects/{id}', fn () => Inertia::render('projects/show'))->name('projects.show');
+    Route::get('batches/{id}/report', fn () => Inertia::render('batches/report'))->name('batches.report');
 });
 
 Route::middleware('auth')->group(function (): void {

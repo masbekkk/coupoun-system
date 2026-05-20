@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreProjectRequest;
 use App\Http\Resources\Api\ProjectResource;
 use App\Models\Project;
@@ -12,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 
-final class ProjectController extends Controller
+final class ProjectController
 {
     public function index(): AnonymousResourceCollection
     {

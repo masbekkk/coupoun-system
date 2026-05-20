@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Actions\GenerateCoupons;
-use App\Http\Controllers\Controller;
 use App\Models\Project;
 use Exception;
 use Illuminate\Http\JsonResponse;
 
-final class CouponGenerationController extends Controller
+final class CouponGenerationController
 {
     public function store(Project $project, GenerateCoupons $action): JsonResponse
     {

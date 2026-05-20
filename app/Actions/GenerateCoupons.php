@@ -45,9 +45,14 @@ final readonly class GenerateCoupons
             for ($boxNumber = 1; $boxNumber <= $project->total_boxes; $boxNumber++) {
                 $batchNumber = (int) ceil($boxNumber / $project->boxes_per_batch);
 
-                $batch = $project->batches()->firstOrCreate([
-                    'batch_number' => $batchNumber,
-                ]);
+                $batch = $project->batches()->updateOrCreate(
+                    ['batch_number' => $batchNumber],
+                    [
+                        'user_id' => auth()->id(),
+                        'location' => 'HQ Production Facility',
+                        'produced_at' => now(),
+                    ]
+                );
 
                 $box = $project->boxes()->create([
                     'batch_id' => $batch->id,

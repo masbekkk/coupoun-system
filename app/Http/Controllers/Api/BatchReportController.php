@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\Batch;
 use Illuminate\Http\JsonResponse;
 
-final class BatchReportController extends Controller
+final class BatchReportController
 {
     public function show(Batch $batch): JsonResponse
     {
@@ -35,9 +34,9 @@ final class BatchReportController extends Controller
                 'project_name' => $batch->project->name,
                 'operator' => [
                     'id' => $batch->operator?->id,
-                    'name' => $batch->operator?->name,
+                    'name' => $batch->operator?->name ?? 'System',
                 ],
-                'location' => $batch->location,
+                'location' => $batch->location ?? 'HQ Production Facility',
                 'status' => $batch->status->value,
                 'produced_at' => $batch->produced_at?->toIso8601String(),
                 'total_boxes' => $batch->boxes->count(),

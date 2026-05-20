@@ -22,6 +22,11 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    {
+        title: 'Coupon Projects',
+        href: '/projects',
+        icon: FolderGit2, // Reusing existing icon, or import another if desired
+    },
 ];
 
 const footerNavItems: NavItem[] = [
