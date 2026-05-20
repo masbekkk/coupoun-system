@@ -10,9 +10,11 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
  * @property-read string $id
@@ -35,9 +37,10 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 ])]
 final class User extends Authenticatable implements MustVerifyEmail
 {
+    use HasApiTokens;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory;
-
     use HasUuids;
     use Notifiable;
     use TwoFactorAuthenticatable;
@@ -60,5 +63,21 @@ final class User extends Authenticatable implements MustVerifyEmail
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @return HasMany<Project, $this>
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class, 'created_by');
+    }
+
+    /**
+     * @return HasMany<Batch, $this>
+     */
+    public function operatedBatches(): HasMany
+    {
+        return $this->hasMany(Batch::class);
     }
 }
