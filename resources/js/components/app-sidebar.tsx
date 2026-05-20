@@ -30,7 +30,11 @@ const mainNavItems: NavItem[] = [
 ];
 
 const footerNavItems: NavItem[] = [
-
+    {
+        title: 'Repository',
+        href: 'https://github.com/masbekkk/coupoun-system',
+        icon: BookOpen,
+    },
 ];
 
 export function AppSidebar() {
