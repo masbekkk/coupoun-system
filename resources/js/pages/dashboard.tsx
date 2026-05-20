@@ -31,7 +31,7 @@ export default function Dashboard() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard Overview" />
             <div className="flex h-full flex-1 flex-col gap-8 overflow-x-auto p-6 md:p-8 max-w-7xl mx-auto w-full">
-                
+
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-border/50 pb-6">
                     <div>
                         <h1 className="text-4xl font-bold tracking-tight text-foreground">Overview</h1>
@@ -137,11 +137,10 @@ export default function Dashboard() {
                                                     <td className="px-4 py-3 font-mono text-xs">{project.code}</td>
                                                     <td className="px-4 py-3 font-medium text-foreground">{project.name}</td>
                                                     <td className="px-4 py-3">
-                                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
-                                                            project.status === 'ready' ? 'border-green-500/30 text-green-600 bg-green-500/10' :
+                                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${project.status === 'ready' ? 'border-green-500/30 text-green-600 bg-green-500/10' :
                                                             project.status === 'generating' ? 'border-amber-500/30 text-amber-600 bg-amber-500/10' :
-                                                            'border-slate-500/30 text-slate-600 bg-slate-500/10'
-                                                        }`}>
+                                                                'border-slate-500/30 text-slate-600 bg-slate-500/10'
+                                                            }`}>
                                                             {project.status}
                                                         </span>
                                                     </td>
@@ -153,7 +152,7 @@ export default function Dashboard() {
                                                     </td>
                                                     <td className="px-4 py-3 text-right">
                                                         <Link href={`/projects/${project.id}`}>
-                                                            <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Button variant="ghost" size="sm" className="group-hover:opacity-100 transition-opacity">
                                                                 Details
                                                             </Button>
                                                         </Link>
@@ -167,7 +166,7 @@ export default function Dashboard() {
                         </CardContent>
                     </Card>
                 </div>
-                
+
             </div>
         </AppLayout>
     );
