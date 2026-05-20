@@ -21,11 +21,20 @@ final class ProjectCouponController
             $query->where('prize_tier_id', $request->query('tier_id'));
         }
 
-        if ($request->filled('search')) {
-            $query->where('serial_number', 'like', '%' . $request->query('search') . '%');
+        if ($request->filled('batch_id')) {
+            $query->whereHas('box', function ($q) use ($request): void {
+                $q->where('batch_id', $request->query('batch_id'));
+            });
         }
 
-        $coupons = $query->latest('id')->paginate(50);
+        if ($request->filled('search')) {
+            $query->where('serial_number', 'like', '%'.$request->query('search').'%');
+        }
+
+        $sort = $request->query('sort', 'asc') === 'desc' ? 'desc' : 'asc';
+        $perPage = min((int) ($request->query('per_page', 50)), 500);
+
+        $coupons = $query->orderBy('serial_number', $sort)->paginate($perPage);
 
         return response()->json($coupons);
     }
@@ -33,7 +42,7 @@ final class ProjectCouponController
     public function export(Request $request, Project $project): BinaryFileResponse
     {
         $tierId = $request->filled('tier_id') ? (int) $request->query('tier_id') : null;
-        
+
         $fileName = sprintf('project-%s-coupons-%s.xlsx', $project->code, date('Ymd-His'));
 
         return Excel::download(new CouponsExport($project->id, $tierId), $fileName);

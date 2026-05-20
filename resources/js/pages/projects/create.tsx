@@ -8,11 +8,83 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Trash2, Plus } from 'lucide-react';
 
+// -------------------------------------------------------------------
+// Controlled number input that avoids the "sticky leading zero" problem.
+// Stores the raw string while typing; converts to number on commit.
+// -------------------------------------------------------------------
+function NumberInput({
+    id,
+    value,
+    onChange,
+    required,
+    readOnly,
+    className,
+    min,
+}: {
+    id?: string;
+    value: number;
+    onChange: (val: number) => void;
+    required?: boolean;
+    readOnly?: boolean;
+    className?: string;
+    min?: number;
+}) {
+    const [raw, setRaw] = useState(String(value));
+
+    // Keep raw in sync when the parent resets the value (e.g. auto-calc)
+    useEffect(() => {
+        setRaw(String(value));
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const input = e.target.value;
+        // Strip leading zeros unless the whole value is "0"
+        const stripped = input.replace(/^0+(\d)/, '$1');
+        setRaw(stripped);
+        const num = parseInt(stripped, 10);
+        if (!isNaN(num)) {
+            onChange(num);
+        }
+    };
+
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+        if (e.target.value === '0') {
+            setRaw('');
+        }
+    };
+
+    const handleBlur = () => {
+        const num = parseInt(raw, 10);
+        if (isNaN(num)) {
+            setRaw('0');
+            onChange(0);
+        } else {
+            setRaw(String(num));
+        }
+    };
+
+    return (
+        <Input
+            id={id}
+            type="number"
+            value={raw}
+            onChange={handleChange}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            required={required}
+            readOnly={readOnly}
+            className={className}
+            min={min}
+        />
+    );
+}
+
 export default function CreateProject() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
 
     const [form, setForm] = useState({
+        code: '',
         name: 'Promo Akhir Tahun',
         description: 'Generating instant prize coupons',
         total_coupons: 10000,
@@ -63,7 +135,12 @@ export default function CreateProject() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
+        if (!form.code.trim()) {
+            setError('Project code is required.');
+            return;
+        }
+
         if (!isBoxQuantityValid) {
             setError(`Prize quantities must sum up exactly to ${form.coupons_per_box} per box. Currently: ${currentBoxTotal}`);
             return;
@@ -73,7 +150,6 @@ export default function CreateProject() {
         setError('');
 
         try {
-            // Append calculated total_quantity to each tier before sending
             const payload = {
                 ...form,
                 tiers: form.tiers.map(t => ({
@@ -99,7 +175,7 @@ export default function CreateProject() {
             { title: 'Create', href: '/projects/create' }
         ]}>
             <Head title="Create Project" />
-            
+
             <div className="flex h-full flex-1 flex-col p-6 md:p-8 max-w-5xl mx-auto w-full">
                 <div className="mb-6">
                     <h1 className="text-3xl font-bold tracking-tight">Create New Project</h1>
@@ -116,32 +192,71 @@ export default function CreateProject() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Basic Information</CardTitle>
-                            <CardDescription>Primary details for this run. Changing coupons per box updates total boxes.</CardDescription>
+                            <CardDescription>Primary details for this run. Changing coupons per box updates total boxes automatically.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-6 md:grid-cols-2">
                             <div className="space-y-2">
                                 <Label htmlFor="name">Project Name</Label>
-                                <Input id="name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
+                                <Input id="name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
                             </div>
                             <div className="space-y-2">
+                                <Label htmlFor="code">
+                                    Project Code
+                                    <span className="text-destructive ml-1">*</span>
+                                </Label>
+                                <Input
+                                    id="code"
+                                    value={form.code}
+                                    onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                                    placeholder="e.g. PROMO-2026-01"
+                                    required
+                                    className="font-mono uppercase tracking-wider"
+                                />
+                                <p className="text-xs text-muted-foreground">Unique identifier for this campaign run.</p>
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
                                 <Label htmlFor="description">Description (Optional)</Label>
-                                <Input id="description" value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+                                <Input id="description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="total_coupons">Total Coupons</Label>
-                                <Input id="total_coupons" type="number" value={form.total_coupons} onChange={e => setForm({...form, total_coupons: Number(e.target.value)})} required />
+                                <NumberInput
+                                    id="total_coupons"
+                                    value={form.total_coupons}
+                                    onChange={val => setForm({ ...form, total_coupons: val })}
+                                    required
+                                    min={1}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="coupons_per_box">Coupons per Box</Label>
-                                <Input id="coupons_per_box" type="number" value={form.coupons_per_box} onChange={e => setForm({...form, coupons_per_box: Number(e.target.value)})} required />
+                                <NumberInput
+                                    id="coupons_per_box"
+                                    value={form.coupons_per_box}
+                                    onChange={val => setForm({ ...form, coupons_per_box: val })}
+                                    required
+                                    min={1}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="total_batches">Total Batches to Produce</Label>
-                                <Input id="total_batches" type="number" value={form.total_batches} onChange={e => setForm({...form, total_batches: Number(e.target.value)})} required />
+                                <NumberInput
+                                    id="total_batches"
+                                    value={form.total_batches}
+                                    onChange={val => setForm({ ...form, total_batches: val })}
+                                    required
+                                    min={1}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="total_boxes">Total Boxes (Auto-calculated)</Label>
-                                <Input id="total_boxes" type="number" value={form.total_boxes} readOnly className="bg-muted" />
+                                <NumberInput
+                                    id="total_boxes"
+                                    value={form.total_boxes}
+                                    onChange={() => {}}
+                                    readOnly
+                                    className="bg-muted cursor-not-allowed"
+                                />
                             </div>
                         </CardContent>
                     </Card>
@@ -150,7 +265,9 @@ export default function CreateProject() {
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle>Prize Tier Configuration</CardTitle>
-                                <CardDescription>Define exactly what goes into each box of {form.coupons_per_box} coupons.</CardDescription>
+                                <CardDescription>
+                                    Define exactly what goes into each box of <strong>{form.coupons_per_box}</strong> coupons.
+                                </CardDescription>
                             </div>
                             <Button type="button" variant="outline" size="sm" onClick={addTier}>
                                 <Plus className="w-4 h-4 mr-2" /> Add Tier
@@ -177,10 +294,22 @@ export default function CreateProject() {
                                                         <Input value={tier.name} onChange={e => handleTierChange(idx, 'name', e.target.value)} required placeholder="Prize Name" className="h-8" />
                                                     </td>
                                                     <td className="px-4 py-2">
-                                                        <Input type="number" value={tier.amount} onChange={e => handleTierChange(idx, 'amount', Number(e.target.value))} required className="h-8" />
+                                                        <NumberInput
+                                                            value={tier.amount}
+                                                            onChange={val => handleTierChange(idx, 'amount', val)}
+                                                            required
+                                                            min={0}
+                                                            className="h-8"
+                                                        />
                                                     </td>
                                                     <td className="px-4 py-2 text-right">
-                                                        <Input type="number" value={tier.per_box_quantity} onChange={e => handleTierChange(idx, 'per_box_quantity', Number(e.target.value))} required className="h-8 text-right" />
+                                                        <NumberInput
+                                                            value={tier.per_box_quantity}
+                                                            onChange={val => handleTierChange(idx, 'per_box_quantity', val)}
+                                                            required
+                                                            min={1}
+                                                            className="h-8 text-right"
+                                                        />
                                                     </td>
                                                     <td className="px-4 py-2 text-right text-muted-foreground font-mono">
                                                         {new Intl.NumberFormat().format(totalQuantity)}

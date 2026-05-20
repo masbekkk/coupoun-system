@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Enums\BatchStatus;
 use App\Enums\ProjectStatus;
 use App\Models\Batch;
 use App\Models\Coupon;
@@ -14,14 +15,14 @@ final readonly class GenerateCoupons
 {
     public function handle(Batch $batch): void
     {
-        if ($batch->status !== 'pending') {
-            throw new Exception('Batch must be in pending status to generate coupons.');
+        if ($batch->status !== BatchStatus::Pending) {
+            throw new Exception('Batch must be in '.BatchStatus::Pending->value.' status to generate coupons.');
         }
 
         $project = $batch->project;
 
-        $batch->update(['status' => 'generating']);
-        
+        $batch->update(['status' => BatchStatus::InProgress]);
+
         if ($project->status === ProjectStatus::Draft) {
             $project->update(['status' => ProjectStatus::Generating]);
         }
@@ -82,14 +83,16 @@ final readonly class GenerateCoupons
         });
 
         $batch->update([
-            'status' => 'ready',
+            'status' => BatchStatus::Completed,
             'user_id' => auth()->id(),
-            'location' => 'HQ Production Facility',
+            'location' => $batch->location ?? 'HQ Production Facility',
             'produced_at' => now(),
         ]);
 
-        // Check if all batches are ready
-        $pendingBatches = $project->batches()->where('status', '!=', 'ready')->count();
+        // Check if all batches are completed
+        $pendingBatches = $project->batches()
+            ->whereNotIn('status', [BatchStatus::Completed->value])
+            ->count();
         if ($pendingBatches === 0) {
             $project->update(['status' => ProjectStatus::Ready]);
         }

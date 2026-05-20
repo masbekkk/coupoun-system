@@ -111,11 +111,10 @@ function CouponDataTable({ coupons, isLoading }: { coupons: Coupon[]; isLoading:
                 if (!tier) return <span className="text-muted-foreground">—</span>;
                 const isWin = tier.amount > 0;
                 return (
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-                        isWin
-                            ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400'
-                            : 'bg-muted text-muted-foreground border-transparent'
-                    }`}>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${isWin
+                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400'
+                        : 'bg-muted text-muted-foreground border-transparent'
+                        }`}>
                         {tier.name}
                     </span>
                 );
@@ -205,17 +204,25 @@ export default function ProjectShow({ id }: { id: string }) {
     const [deleting, setDeleting] = useState(false);
 
     const [generatingBatchId, setGeneratingBatchId] = useState<number | null>(null);
+    const [locationInput, setLocationInput] = useState<string>('');
+    const [pendingGenerateBatchId, setPendingGenerateBatchId] = useState<number | null>(null);
     const [activeTab, setActiveTab] = useState<'overview' | 'batches' | 'coupons'>('overview');
     const [selectedTier, setSelectedTier] = useState<string>('all');
+    const [selectedBatch, setSelectedBatch] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState<string>('');
+    const [perPage, setPerPage] = useState<number>(50);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [currentPage, setCurrentPage] = useState<number>(1);
     const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // FIXED: fire project + batches requests in parallel (no double sequential calls)
     const loadProjectData = async () => {
         try {
-            const projRes = await apiFetch(`/api/v1/projects/${projectId}`);
+            const [projRes, batchRes] = await Promise.all([
+                apiFetch(`/api/v1/projects/${projectId}`),
+                apiFetch(`/api/v1/projects/${projectId}/batches`),
+            ]);
             setProject(projRes.data);
-
-            const batchRes = await apiFetch(`/api/v1/projects/${projectId}/batches`);
             setBatches(batchRes.data || []);
         } catch (error) {
             console.error('Failed to fetch project details:', error);
@@ -224,21 +231,32 @@ export default function ProjectShow({ id }: { id: string }) {
         }
     };
 
-    const loadCoupons = async (tierId: string = selectedTier, search: string = searchQuery) => {
+    const loadCoupons = async (
+        tierId: string = selectedTier,
+        batchId: string = selectedBatch,
+        search: string = searchQuery,
+        page: number = currentPage,
+        limit: number = perPage,
+        order: string = sortOrder,
+    ) => {
         setCouponsLoading(true);
         try {
             const params = new URLSearchParams();
             if (tierId !== 'all') params.set('tier_id', tierId);
+            if (batchId !== 'all') params.set('batch_id', batchId);
             if (search.trim()) params.set('search', search.trim());
-            const couponUrl = `/api/v1/projects/${projectId}/coupons${params.toString() ? '?' + params.toString() : ''}`;
+            params.set('page', String(page));
+            params.set('per_page', String(limit));
+            params.set('sort', order);
+            const couponUrl = `/api/v1/projects/${projectId}/coupons?${params.toString()}`;
             const coupRes = await apiFetch(couponUrl);
             const responseData = coupRes.data;
 
-            // Handle paginated response
             if (responseData?.data && Array.isArray(responseData.data)) {
                 setCoupons(responseData.data);
                 setCouponMeta({ total: responseData.total, per_page: responseData.per_page, current_page: responseData.current_page });
             } else if (Array.isArray(responseData)) {
+                console.log("arr")
                 setCoupons(responseData);
                 setCouponMeta(null);
             } else {
@@ -256,25 +274,50 @@ export default function ProjectShow({ id }: { id: string }) {
     }, [projectId]);
 
     useEffect(() => {
-        if (projectId && activeTab === 'coupons') loadCoupons(selectedTier, searchQuery);
-    }, [projectId, selectedTier, activeTab]);
+        if (projectId && activeTab === 'coupons') {
+            setCurrentPage(1);
+            loadCoupons(selectedTier, selectedBatch, searchQuery, 1, perPage, sortOrder);
+        }
+    }, [projectId, selectedTier, selectedBatch, activeTab, perPage, sortOrder]);
 
     const handleSearchChange = (value: string) => {
         setSearchQuery(value);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = setTimeout(() => {
-            loadCoupons(selectedTier, value);
+            setCurrentPage(1);
+            loadCoupons(selectedTier, selectedBatch, value, 1, perPage, sortOrder);
         }, 400);
     };
 
     const handleTierChange = (value: string) => {
         setSelectedTier(value);
+        setCurrentPage(1);
+    };
+
+    const handleBatchChange = (value: string) => {
+        setSelectedBatch(value);
+        setCurrentPage(1);
+    };
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        loadCoupons(selectedTier, selectedBatch, searchQuery, page, perPage, sortOrder);
+    };
+
+    // Show location modal before generating
+    const promptGenerateBatch = (batchId: number) => {
+        setLocationInput('');
+        setPendingGenerateBatchId(batchId);
     };
 
     const handleGenerateBatch = async (batchId: number) => {
+        setPendingGenerateBatchId(null);
         setGeneratingBatchId(batchId);
         try {
-            await apiFetch(`/api/v1/batches/${batchId}/generate`, { method: 'POST' });
+            await apiFetch(`/api/v1/batches/${batchId}/generate`, {
+                method: 'POST',
+                body: JSON.stringify({ location: locationInput.trim() || 'HQ Production Facility' }),
+            });
             loadProjectData();
             if (activeTab === 'coupons') loadCoupons(selectedTier);
         } catch (error) {
@@ -330,11 +373,10 @@ export default function ProjectShow({ id }: { id: string }) {
                             <div>
                                 <div className="flex items-center gap-3 mb-1">
                                     <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
-                                    <div className={`text-xs px-2.5 py-1 rounded-full capitalize border font-medium ${
-                                        project.status === 'ready' ? 'border-green-500/30 text-green-600 bg-green-500/10' :
+                                    <div className={`text-xs px-2.5 py-1 rounded-full capitalize border font-medium ${project.status === 'ready' ? 'border-green-500/30 text-green-600 bg-green-500/10' :
                                         project.status === 'generating' ? 'border-amber-500/30 text-amber-600 bg-amber-500/10' :
-                                        'border-slate-500/30 text-slate-600 bg-slate-500/10'
-                                    }`}>
+                                            'border-slate-500/30 text-slate-600 bg-slate-500/10'
+                                        }`}>
                                         {project.status}
                                     </div>
                                 </div>
@@ -403,6 +445,37 @@ export default function ProjectShow({ id }: { id: string }) {
                             </div>
                         )}
 
+                        {/* Location Input Modal */}
+                        {pendingGenerateBatchId !== null && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                                <Card className="w-full max-w-md mx-4 shadow-2xl">
+                                    <CardHeader>
+                                        <CardTitle>Set Production Location</CardTitle>
+                                        <CardDescription>Enter the facility or location for this batch generation run.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium" htmlFor="location-input">Location</label>
+                                            <input
+                                                id="location-input"
+                                                type="text"
+                                                placeholder="e.g. HQ Production Facility, Jakarta"
+                                                value={locationInput}
+                                                onChange={e => setLocationInput(e.target.value)}
+                                                className="w-full h-9 px-3 rounded-md border border-input bg-transparent text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                autoFocus
+                                                onKeyDown={e => { if (e.key === 'Enter') handleGenerateBatch(pendingGenerateBatchId!); }}
+                                            />
+                                        </div>
+                                        <div className="flex gap-2 justify-end">
+                                            <Button variant="outline" size="sm" onClick={() => setPendingGenerateBatchId(null)}>Cancel</Button>
+                                            <Button size="sm" onClick={() => handleGenerateBatch(pendingGenerateBatchId!)}>Start Generation</Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+
                         {/* Batches Tab */}
                         {activeTab === 'batches' && (
                             <div className="animate-in fade-in slide-in-from-bottom-2">
@@ -416,29 +489,45 @@ export default function ProjectShow({ id }: { id: string }) {
                                                 <CardHeader>
                                                     <CardTitle className="text-lg flex justify-between items-center">
                                                         <span>Batch #{batch.batch_number}</span>
-                                                        <span className={`text-xs px-2 py-1 rounded capitalize font-medium ${
-                                                            batch.status === 'ready' ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' :
-                                                            batch.status === 'generating' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
-                                                            'bg-slate-100 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300'
-                                                        }`}>
-                                                            {batch.status}
+                                                        <span className={`text-xs px-2 py-1 rounded capitalize font-medium ${batch.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' :
+                                                                batch.status === 'in_progress' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
+                                                                    'bg-slate-100 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300'
+                                                            }`}>
+                                                            {batch.status.replace('_', ' ')}
                                                         </span>
                                                     </CardTitle>
                                                     <CardDescription>
-                                                        {batch.status === 'ready'
-                                                            ? `Generated by ${batch.operator?.name || 'System'} • ${new Date(batch.produced_at || batch.created_at).toLocaleString()}`
+                                                        {batch.status === 'completed'
+                                                            ? `Generated by ${batch.operator?.name || 'System'} at ${batch.location || '—'} • ${new Date(batch.produced_at || batch.created_at).toLocaleString()}`
                                                             : 'Awaiting operator generation'}
                                                     </CardDescription>
                                                 </CardHeader>
-                                                <CardContent>
-                                                    {batch.status === 'ready' ? (
-                                                        <Link href={`/batches/${batch.id}/report`} className="block w-full">
-                                                            <Button variant="secondary" size="sm" className="w-full">View Distribution Report</Button>
-                                                        </Link>
+                                                <CardContent className="flex flex-col gap-2">
+                                                    {batch.status === 'completed' ? (
+                                                        <>
+                                                            <Link href={`/batches/${batch.id}/report`} className="block w-full">
+                                                                <Button variant="secondary" size="sm" className="w-full">View Distribution Report</Button>
+                                                            </Link>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="w-full"
+                                                                onClick={() => {
+                                                                    setSelectedBatch(String(batch.id));
+                                                                    setActiveTab('coupons');
+                                                                    setSelectedTier('all');
+                                                                    setSearchQuery('');
+                                                                    setCurrentPage(1);
+                                                                    loadCoupons('all', String(batch.id), '', 1, perPage, sortOrder);
+                                                                }}
+                                                            >
+                                                                View Generated Coupons
+                                                            </Button>
+                                                        </>
                                                     ) : (
                                                         <Button
-                                                            onClick={() => handleGenerateBatch(batch.id)}
-                                                            disabled={generatingBatchId === batch.id || batch.status === 'generating'}
+                                                            onClick={() => promptGenerateBatch(batch.id)}
+                                                            disabled={generatingBatchId === batch.id || batch.status === 'in_progress'}
                                                             className="w-full"
                                                         >
                                                             {generatingBatchId === batch.id ? 'Generating Algorithm...' : 'Generate Batch'}
@@ -461,8 +550,12 @@ export default function ProjectShow({ id }: { id: string }) {
                                         <div>
                                             <h2 className="text-xl font-semibold">Generated Coupons</h2>
                                             {couponMeta && (
-                                                <p className="text-sm text-muted-foreground">
-                                                    Showing {coupons.length} of {new Intl.NumberFormat().format(couponMeta.total)} coupons
+                                                <p className="text-sm text-muted-foreground mt-1">
+                                                    Showing <span className="font-semibold text-foreground">{(couponMeta.current_page - 1) * couponMeta.per_page + 1} - {Math.min(couponMeta.current_page * couponMeta.per_page, couponMeta.total)}</span> of{' '}
+                                                    <span className="font-semibold text-foreground">{new Intl.NumberFormat().format(couponMeta.total)}</span> coupons
+                                                    {(selectedTier !== 'all' || selectedBatch !== 'all' || searchQuery.trim() !== '') && (
+                                                        <span> (filtered from {new Intl.NumberFormat().format(project.config.total_coupons)} total)</span>
+                                                    )}
                                                 </p>
                                             )}
                                         </div>
@@ -501,6 +594,21 @@ export default function ProjectShow({ id }: { id: string }) {
                                             )}
                                         </div>
 
+                                        {/* Batch Filter */}
+                                        <Select value={selectedBatch} onValueChange={handleBatchChange}>
+                                            <SelectTrigger className="w-full sm:w-56" id="batch-filter">
+                                                <SelectValue placeholder="All Batches" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Batches</SelectItem>
+                                                {batches.filter((b: any) => b.status === 'completed').map((batch: any) => (
+                                                    <SelectItem key={batch.id} value={String(batch.id)}>
+                                                        Batch #{batch.batch_number} ({batch.location || 'HQ'})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+
                                         {/* Prize Tier Filter */}
                                         <Select value={selectedTier} onValueChange={handleTierChange}>
                                             <SelectTrigger className="w-full sm:w-56" id="tier-filter">
@@ -525,13 +633,57 @@ export default function ProjectShow({ id }: { id: string }) {
                                     </div>
                                 </div>
 
+                                {/* Pagination Controls (top) */}
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-muted-foreground">Rows per page:</span>
+                                        <Select value={String(perPage)} onValueChange={v => { setPerPage(Number(v)); setCurrentPage(1); }}>
+                                            <SelectTrigger className="h-8 w-20" id="per-page">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {[25, 50, 100, 250, 500].map(n => (
+                                                    <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-muted-foreground">Order:</span>
+                                        <Select value={sortOrder} onValueChange={v => setSortOrder(v as 'asc' | 'desc')}>
+                                            <SelectTrigger className="h-8 w-36" id="sort-order">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="asc">Ascending (001 → end)</SelectItem>
+                                                <SelectItem value="desc">Descending (end → 001)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
                                 {/* Data Table */}
                                 <CouponDataTable coupons={coupons} isLoading={couponsLoading} />
 
+                                {/* Pagination Footer */}
                                 {couponMeta && couponMeta.total > couponMeta.per_page && (
-                                    <p className="text-center text-xs text-muted-foreground pt-2">
-                                        Showing first {couponMeta.per_page} records. Use Export Excel to download the full dataset.
-                                    </p>
+                                    <div className="flex items-center justify-between pt-2">
+                                        <span className="text-xs text-muted-foreground">
+                                            Page {couponMeta.current_page} of {Math.ceil(couponMeta.total / couponMeta.per_page)}
+                                        </span>
+                                        <div className="flex gap-1">
+                                            <Button
+                                                variant="outline" size="sm"
+                                                disabled={couponMeta.current_page <= 1 || couponsLoading}
+                                                onClick={() => handlePageChange(couponMeta.current_page - 1)}
+                                            >← Prev</Button>
+                                            <Button
+                                                variant="outline" size="sm"
+                                                disabled={couponMeta.current_page >= Math.ceil(couponMeta.total / couponMeta.per_page) || couponsLoading}
+                                                onClick={() => handlePageChange(couponMeta.current_page + 1)}
+                                            >Next →</Button>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         )}

@@ -20,6 +20,7 @@ final class StoreProjectRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:30', 'unique:projects,code'],
             'description' => ['nullable', 'string'],
             'total_coupons' => ['required', 'integer', 'min:1'],
             'coupons_per_box' => ['required', 'integer', 'min:1'],

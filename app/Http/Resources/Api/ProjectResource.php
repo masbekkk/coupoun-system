@@ -22,7 +22,7 @@ final class ProjectResource extends JsonResource
             'code' => $this->code,
             'name' => $this->name,
             'description' => $this->description,
-            'status' => $this->status->value,
+            'status' => $this->status,
             'config' => [
                 'total_coupons' => $this->total_coupons,
                 'total_boxes' => $this->total_boxes,

@@ -25,6 +25,7 @@ final class ProjectController
         $project = DB::transaction(function () use ($request) {
             $project = Project::create([
                 'created_by' => $request->user()->id,
+                'code' => $request->validated('code'),
                 'name' => $request->validated('name'),
                 'description' => $request->validated('description'),
                 'total_coupons' => $request->validated('total_coupons'),
@@ -64,7 +65,7 @@ final class ProjectController
         $project->delete();
 
         return response()->json([
-            'message' => 'Project and all its associated data have been permanently deleted.'
+            'message' => 'Project and all its associated data have been permanently deleted.',
         ]);
     }
 }
