@@ -250,17 +250,24 @@ export default function ProjectShow({ id }: { id: string }) {
             params.set('sort', order);
             const couponUrl = `/api/v1/projects/${projectId}/coupons?${params.toString()}`;
             const coupRes = await apiFetch(couponUrl);
-            const responseData = coupRes.data;
 
-            if (responseData?.data && Array.isArray(responseData.data)) {
-                setCoupons(responseData.data);
-                setCouponMeta({ total: responseData.total, per_page: responseData.per_page, current_page: responseData.current_page });
-            } else if (Array.isArray(responseData)) {
-                console.log("arr")
-                setCoupons(responseData);
-                setCouponMeta(null);
+            if (coupRes && typeof coupRes === 'object' && 'data' in coupRes && Array.isArray(coupRes.data)) {
+                setCoupons(coupRes.data);
+                setCouponMeta({
+                    total: coupRes.total ?? coupRes.data.length,
+                    per_page: coupRes.per_page ?? limit,
+                    current_page: coupRes.current_page ?? page
+                });
+            } else if (Array.isArray(coupRes)) {
+                setCoupons(coupRes);
+                setCouponMeta({
+                    total: coupRes.length,
+                    per_page: limit,
+                    current_page: page
+                });
             } else {
                 setCoupons([]);
+                setCouponMeta(null);
             }
         } catch (error) {
             console.error('Failed to fetch coupons:', error);
