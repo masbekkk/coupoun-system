@@ -89,11 +89,22 @@ jobs:
         run: |
           # Setup SSH key
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          
+          # Clean private key of carriage returns (CRLF) and save
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          
+          # Check key integrity
+          if [ ! -s ~/.ssh/deploy_key ] || ! grep -q "PRIVATE KEY" ~/.ssh/deploy_key; then
+            echo "❌ Error: The SSH private key is empty, invalid, or missing header/footer delimiters."
+            echo "Please ensure that secrets.HOSTINGER_SSH_KEY contains a valid SSH private key."
+            exit 1
+          fi
+
           ssh-keyscan -p 65002 "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
-          SSH_CMD="ssh -p 65002 -i ~/.ssh/deploy_key -o ConnectTimeout=30 -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST}"
+          # Added legacy RSA support configurations in case the key is RSA format on newer OpenSSH client
+          SSH_CMD="ssh -p 65002 -i ~/.ssh/deploy_key -o ConnectTimeout=30 -o StrictHostKeyChecking=no -o PubkeyAcceptedKeyTypes=+ssh-rsa -o HostKeyAlgorithms=+ssh-rsa ${SSH_USER}@${SSH_HOST}"
 
           DEPLOY_SCRIPT="
             cd ${PROJECT_PATH}
