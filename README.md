@@ -1,101 +1,218 @@
-- Inertia & React (this project) version: **[github.com/nunomaduro/laravel-starter-kit-inertia-react](https://github.com/nunomaduro/laravel-starter-kit-inertia-react)**
-- Blade version: **[github.com/nunomaduro/laravel-starter-kit](https://github.com/nunomaduro/laravel-starter-kit)**
-- Inertia & Vue version: **[github.com/nunomaduro/laravel-starter-kit-inertia-vue](https://github.com/nunomaduro/laravel-starter-kit-inertia-vue)**
+# Coupon Production System
 
-<p align="center">
-    <a href="https://youtu.be/VhzP0XWGTC4" target="_blank">
-        <img src="https://github.com/nunomaduro/laravel-starter-kit/blob/main/art/banner.png" alt="Overview Laravel Starter Kit" style="width:70%;">
-    </a>
-</p>
+An internal admin tool for managing **instant-prize coupon campaigns** — from campaign configuration to randomized coupon generation, distribution reporting, and Excel export.
 
-<p>
-    <a href="https://github.com/nunomaduro/laravel-starter-kit-inertia-react/actions"><img src="https://github.com/nunomaduro/laravel-starter-kit-inertia-react/actions/workflows/tests.yml/badge.svg" alt="Build Status"></a>
-    <a href="https://packagist.org/packages/nunomaduro/laravel-starter-kit-inertia-react"><img src="https://img.shields.io/packagist/dt/nunomaduro/laravel-starter-kit-inertia-react" alt="Total Downloads"></a>
-    <a href="https://packagist.org/packages/nunomaduro/laravel-starter-kit-inertia-react"><img src="https://img.shields.io/packagist/v/nunomaduro/laravel-starter-kit-inertia-react" alt="Latest Stable Version"></a>
-    <a href="https://packagist.org/packages/nunomaduro/laravel-starter-kit-inertia-react"><img src="https://img.shields.io/packagist/l/nunomaduro/laravel-starter-kit-inertia-react" alt="License"></a>
-    <a href="https://youtube.com/@nunomaduro?sub_confirmation=1"><img alt="YouTube Channel Subscribers" src="https://img.shields.io/youtube/channel/subscribers/UCO_hYZF2gb_CyG5sA7ArlGg?style=flat&label=youtube&color=brightgreen"></a>
-</p>
+## Quick Start
 
-**Laravel Starter Kit (Inertia & React)** is an ultra-strict, type-safe [Laravel](https://laravel.com) skeleton engineered for developers who refuse to compromise on code quality. This opinionated starter kit enforces rigorous development standards through meticulous tooling configuration and architectural decisions that prioritize type safety, immutability, and fail-fast principles.
-
-## Why This Starter Kit?
-
-Modern PHP has evolved into a mature, type-safe language, yet many Laravel projects still operate with loose conventions and optional typing. This starter kit changes that paradigm by enforcing:
-
-- **Fully Actions-Oriented Architecture**: Every operation is encapsulated in a single-action class
-- **Cruddy by Design**: Standardized CRUD operations for all controllers, actions, and Inertia & React pages
-- **100% Type Coverage**: Every method, property, and parameter is explicitly typed
-- **Zero Tolerance for Code Smells**: Rector, PHPStan, OxLint, and Oxfmt at maximum strictness catch issues before they become bugs
-- **Immutable-First Architecture**: Data structures favor immutability to prevent unexpected mutations
-- **Fail-Fast Philosophy**: Errors are caught at compile-time, not runtime
-- **Automated Code Quality**: Pre-configured tools ensure consistent, pristine code across your entire team
-- **Just Better Laravel Defaults**: Thanks to **[Essentials](https://github.com/nunomaduro/essentials)** / strict models, auto eager loading, immutable dates, and more...
-- **AI Guidelines**: Integrated AI Guidelines to assist in maintaining code quality and consistency
-- **Full Testing Suite**: More than 150 tests with 100% code coverage using Pest
-- 
-This isn't just another Laravel boilerplate—it's a statement that PHP applications can and should be built with the same rigor as strongly-typed languages like Rust or TypeScript.
-
-## Getting Started
-
-> **Requires [PHP 8.5+](https://php.net/releases/) and a code coverage driver like [xdebug](https://xdebug.org/docs/install)**.
-
-Create your type-safe Laravel application using [Composer](https://getcomposer.org):
+> **Requires [PHP 8.4+](https://php.net/releases/), [Node.js 20+](https://nodejs.org/), and [Composer](https://getcomposer.org/).**
 
 ```bash
-composer create-project nunomaduro/laravel-starter-kit-inertia-react --prefer-dist example-app
-```
+# Clone the repository
+git clone https://github.com/masbekkk/coupoun-system.git
+cd coupoun-system
 
-### Initial Setup
+# Install dependencies
+composer install
+npm install
 
-Navigate to your project and complete the setup:
+# Setup environment
+cp .env.example .env
+php artisan key:generate
 
-```bash
-cd example-app
-
-# Setup the project
-composer setup
+# Run database migrations
+php artisan migrate
 
 # Start the development server
 composer dev
 ```
 
-### Optional: Browser Testing Setup
+The app will be available at `http://localhost:8000`.
 
-If you plan to use Pest's browser testing capabilities:
+## Features
 
-```bash
-bun add playwright
-bunx playwright install
+- **Project Management** — Create and configure coupon campaigns with custom prize tiers
+- **Randomized Coupon Generation** — Generate coupons with fair, randomized prize distribution across boxes
+- **Batch Production** — Split large campaigns into production batches for phased manufacturing
+- **Distribution Reports** — View per-box prize distribution to verify allocation fairness
+- **Excel Export** — Download coupon data as `.xlsx` files for physical production
+- **Dashboard Analytics** — Overview of all projects, batches, and coupon counts
+- **Dark Mode** — Light, Dark, and System theme support
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Laravel 13, PHP 8.4 |
+| Frontend | React, Inertia.js v3, TypeScript |
+| Styling | Tailwind CSS, shadcn/ui |
+| Database | SQLite (default), MySQL/PostgreSQL supported |
+| Auth | Laravel Fortify (session-based) |
+| Testing | Pest v5 |
+| Code Quality | Pint, Rector, Larastan, OxLint |
+
+## Domain Concepts
+
+```
+Project
+├── Prize Tiers (1..N)       — prize levels with amounts and per-box quantities
+├── Batches (1..N)           — production runs assigned to operators
+│   └── Boxes (1..N)         — physical boxes within each batch
+│       └── Coupons (N)      — individual coupons with serial numbers
 ```
 
-### Verify Installation
+| Term | Description |
+|------|-------------|
+| **Project** | A campaign configuration defining total coupons, box structure, and prize tiers |
+| **Prize Tier** | A prize level (e.g., "Rp 100,000", "No Prize") with a per-box quantity |
+| **Batch** | A production run — generates coupons for a subset of boxes |
+| **Box** | A physical box containing exactly `coupons_per_box` coupons |
+| **Coupon** | An individual coupon with a unique serial number and assigned prize |
 
-Run the test suite to ensure everything is configured correctly:
+## Database Schema
 
-```bash
-composer test
+```mermaid
+erDiagram
+    USER ||--o{ PROJECT : creates
+    USER ||--o{ BATCH : operates
+    PROJECT ||--|{ PRIZE_TIER : has
+    PROJECT ||--|{ BATCH : has
+    BATCH ||--|{ BOX : contains
+    BOX ||--|{ COUPON : contains
+    PRIZE_TIER ||--|{ COUPON : assigns
+
+    USER {
+        uuid id PK
+        string name
+        string email
+    }
+    PROJECT {
+        int id PK
+        uuid created_by FK
+        string name
+        string code UK
+        int total_coupons
+        int coupons_per_box
+        int total_boxes
+        int total_batches
+        int boxes_per_batch
+        enum status
+    }
+    PRIZE_TIER {
+        int id PK
+        int project_id FK
+        string name
+        int amount
+        int total_quantity
+        int per_box_quantity
+    }
+    BATCH {
+        int id PK
+        int project_id FK
+        uuid user_id FK
+        int batch_number
+        string location
+        enum status
+        datetime produced_at
+    }
+    BOX {
+        int id PK
+        int project_id FK
+        int batch_id FK
+        int box_number
+    }
+    COUPON {
+        int id PK
+        int project_id FK
+        int box_id FK
+        int prize_tier_id FK
+        char serial_number
+        int position_in_box
+    }
 ```
 
-You should see 100% test coverage and all quality checks passing.
+### Status Lifecycle
 
-## Available Tooling
+**Project:** `draft` → `generating` → `ready` → `in_production` → `completed`
+
+**Batch:** `pending` → `in_progress` → `completed`
+
+## Business Logic
+
+### Project Creation
+1. Project code must be unique (max 30 characters)
+2. Sum of all `per_box_quantity` across prize tiers **must equal** `coupons_per_box`
+3. Creating a project auto-creates N empty batches (status: `pending`)
+
+### Coupon Generation
+1. Only batches with `pending` status can be generated
+2. Prizes are **randomized within each box** — no two adjacent same-value winning coupons
+3. Serial numbers are zero-padded to 5 characters (`00001`, `00002`, etc.)
+4. Box numbers are globally sequential across batches
+5. When all batches complete, project status transitions to `ready`
+
+### Project Deletion
+- Cascade deletes all associated batches, boxes, coupons, and prize tiers
+
+## API Reference
+
+All endpoints are prefixed with `/api/v1` and require authentication (`auth:sanctum` middleware).
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/user` | Current authenticated user |
+| `GET` | `/api/v1/dashboard/stats` | Dashboard statistics + recent projects |
+| `GET` | `/api/v1/projects` | List all projects (paginated) |
+| `POST` | `/api/v1/projects` | Create project with prize tiers |
+| `GET` | `/api/v1/projects/{id}` | Project detail with prize tiers |
+| `DELETE` | `/api/v1/projects/{id}` | Delete project permanently |
+| `GET` | `/api/v1/projects/{id}/batches` | List batches for a project |
+| `GET` | `/api/v1/projects/{id}/coupons` | List coupons (filtered, paginated) |
+| `GET` | `/api/v1/projects/{id}/coupons/export` | Export coupons as Excel |
+| `POST` | `/api/v1/batches/{id}/generate` | Generate coupons for a batch |
+| `GET` | `/api/v1/batches/{id}/report` | Batch distribution report |
+
+> For detailed request/response JSON schemas, see [api_specification.md](./api_specification.md).
+
+### Coupon Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `tier_id` | int | — | Filter by prize tier |
+| `batch_id` | int | — | Filter by batch |
+| `search` | string | — | Search by serial number |
+| `sort` | string | `asc` | Sort order (`asc` / `desc`) |
+| `per_page` | int | `50` | Results per page (max 500) |
+| `page` | int | `1` | Page number |
+
+## Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `APP_NAME` | Application name | `Laravel` |
+| `APP_URL` | Application URL | `http://localhost` |
+| `DB_CONNECTION` | Database driver | `sqlite` |
+| `SESSION_DRIVER` | Session storage | `database` |
+| `QUEUE_CONNECTION` | Queue driver | `database` |
+
+## Available Commands
 
 ### Development
-- `composer dev` - Starts Laravel server, queue worker, log monitoring, and Vite+ dev server concurrently
+- `composer dev` — Start Laravel server, queue worker, log watcher, and Vite dev server
 
 ### Code Quality
-- `composer lint` - Runs Rector (refactoring), Pint (PHP formatting), and Oxfmt (JS/TS formatting)
-- `composer test:lint` - Dry-run mode for CI/CD pipelines
+- `composer lint` — Run Rector, Pint, and Oxfmt formatters
+- `composer test:lint` — Dry-run mode for CI/CD
 
 ### Testing
-- `composer test:type-coverage` - Ensures 100% type coverage with Pest
-- `composer test:types` - Runs PHPStan at level 9 (maximum strictness)
-- `composer test:unit` - Runs Pest tests with 100% code coverage requirement
-- `composer test` - Runs the complete test suite (type coverage, unit tests, linting, static analysis)
+- `composer test` — Full test suite (types, coverage, linting, static analysis)
+- `composer test:unit` — Run Pest tests with coverage
+- `composer test:types` — PHPStan at level 9
 
-### Maintenance
-- `composer update:requirements` - Updates all PHP and Bun dependencies to latest versions
+## Documentation
+
+- [API Specification](./api_specification.md) — Detailed endpoint schemas with JSON examples
+- [Mobile App Spec](./MOBILE_APP_SPEC.md) — Full specification for building a mobile client
 
 ## License
 
-**Laravel Starter Kit Inertia React** was created by **[Nuno Maduro](https://x.com/enunomaduro)** under the **[MIT license](https://opensource.org/licenses/MIT)**.
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
