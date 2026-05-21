@@ -26,14 +26,14 @@ final readonly class SessionController
     {
         $user = $request->validateCredentials();
 
-        // if ($user->hasEnabledTwoFactorAuthentication()) {
-        //     $request->session()->put([
-        //         'login.id' => $user->getKey(),
-        //         'login.remember' => $request->boolean('remember'),
-        //     ]);
+        if ($user->hasEnabledTwoFactorAuthentication()) {
+            $request->session()->put([
+                'login.id' => $user->getKey(),
+                'login.remember' => $request->boolean('remember'),
+            ]);
 
-        //     return to_route('two-factor.login');
-        // }
+            return to_route('two-factor.login');
+        }
 
         Auth::login($user, $request->boolean('remember'));
 

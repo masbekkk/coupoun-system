@@ -72,6 +72,12 @@ Route::middleware('guest')->group(function (): void {
         ->name('login');
     Route::post('login', [SessionController::class, 'store'])
         ->name('login.store');
+
+    // Two-Factor Challenge...
+    Route::get('two-factor-challenge', [Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController::class, 'create'])
+        ->name('two-factor.login');
+    Route::post('two-factor-challenge', [Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController::class, 'store'])
+        ->name('two-factor.login.store');
 });
 
 Route::middleware('auth')->group(function (): void {
