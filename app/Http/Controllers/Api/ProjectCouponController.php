@@ -47,4 +47,17 @@ final class ProjectCouponController
 
         return Excel::download(new CouponsExport($project->id, $tierId), $fileName);
     }
+
+    public function exportLink(Request $request, Project $project): JsonResponse
+    {
+        $tierId = $request->filled('tier_id') ? (int) $request->query('tier_id') : null;
+
+        $fileName = sprintf('exports/coupons/project-%s-coupons-%s.xlsx', $project->code, date('Ymd-His'));
+
+        Excel::store(new CouponsExport($project->id, $tierId), $fileName, 'public');
+
+        return response()->json([
+            'url' => asset('storage/'.$fileName),
+        ]);
+    }
 }

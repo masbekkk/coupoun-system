@@ -47,6 +47,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/projects/{project}/batches', [ProjectBatchController::class, 'index']);
     Route::get('/projects/{project}/coupons', [ProjectCouponController::class, 'index']);
     Route::get('/projects/{project}/coupons/export', [ProjectCouponController::class, 'export']);
+    Route::get('/projects/{project}/coupons/export-link', [ProjectCouponController::class, 'exportLink']);
 
     // Reporting Endpoints
     Route::get('/batches/{batch}/report', [BatchReportController::class, 'show']);
