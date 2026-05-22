@@ -466,6 +466,23 @@ Authorization: Bearer {auth_token}
 
 ---
 
+### exportCouponsLink (Direct Link for Mobile)
+* **Method**: `GET`
+* **Path**: `/api/v1/projects/{id}/coupons/export-link`
+* **Auth**: Ya (Bearer Token)
+
+#### Query Parameters
+* `tier_id` (opsional): Menyaring kupon berdasarkan ID tingkatan hadiah.
+
+#### Response Sukses (`200 OK`)
+```json
+{
+  "url": "https://coupon-system.masbek.my.id/storage/exports/coupons/project-PROJ-X1-coupons-20260522-101924.xlsx"
+}
+```
+
+---
+
 ## ⚙️ 6. Pengaturan Profil & Password
 
 ### updateProfile

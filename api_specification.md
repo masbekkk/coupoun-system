@@ -583,6 +583,24 @@ Download all coupons as an Excel (.xlsx) file.
 
 ---
 
+#### `GET /api/v1/projects/{project}/coupons/export-link`
+
+Generate and store the Excel coupons file, returning a direct URL to download it.
+
+**Query Parameters:**
+| Name | Type | Description |
+|------|------|-------------|
+| `tier_id` | integer | Optional. Filter export by prize tier ID |
+
+**Response (200 OK):**
+```json
+{
+  "url": "https://coupon-system.masbek.my.id/storage/exports/coupons/project-PROJ-X1-coupons-20260522-101924.xlsx"
+}
+```
+
+---
+
 ### 4.6 Batch Report
 
 #### `GET /api/v1/batches/{batch}/report`
@@ -708,6 +726,7 @@ All paginated endpoints use Laravel's standard pagination format:
 | `GET` | `/api/v1/projects/{project}/batches` | List batches for project | ✅ |
 | `GET` | `/api/v1/projects/{project}/coupons` | List coupons (filtered, paginated) | ✅ |
 | `GET` | `/api/v1/projects/{project}/coupons/export` | Export coupons as Excel | ✅ |
+| `GET` | `/api/v1/projects/{project}/coupons/export-link` | Get Excel export download link | ✅ |
 | `POST` | `/api/v1/batches/{batch}/generate` | Generate coupons for batch | ✅ |
 | `GET` | `/api/v1/batches/{batch}/report` | Batch distribution report | ✅ |
 
@@ -768,7 +787,7 @@ Route::prefix('v1')->group(function () {
 | Project Detail — Batches | Batches Tab/Screen | `GET /projects/{id}/batches` |
 | Project Detail — Generate | Generate Action | `POST /batches/{id}/generate` |
 | Project Detail — Coupons | Coupons List | `GET /projects/{id}/coupons` |
-| Export Coupons | Share/Download | `GET /projects/{id}/coupons/export` |
+| Export Coupons | Share/Download | `GET /projects/{id}/coupons/export`, `GET /projects/{id}/coupons/export-link` |
 | Batch Report | Report Detail | `GET /batches/{id}/report` |
 | Delete Project | Delete Action | `DELETE /projects/{id}` |
 
